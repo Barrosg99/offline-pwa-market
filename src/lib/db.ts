@@ -1,4 +1,3 @@
-// lib/db.js
 import Dexie, { type EntityTable } from "dexie";
 
 interface Product {
@@ -7,23 +6,19 @@ interface Product {
   price: number;
   stock: number;
   imageUrl: string;
+  max?: number;
 }
 
 const db = new Dexie("mercadoDatabase") as Dexie & {
   products: EntityTable<Product, "id">;
 };
 
-// Define o schema do banco de dados
-// Aqui criamos uma "tabela" chamada 'products'
-// '++id' significa que será um ID auto-incrementado
-// 'name' é um índice para facilitar a busca
 db.version(1).stores({
   products: "++id, name, price, stock, imageUrl",
 });
 
 db.on("populate", async () => {
   try {
-    // Adiciona todos os produtos da lista inicial de uma vez
     await db.products.bulkAdd([
       {
         name: "Arroz",
@@ -31,6 +26,7 @@ db.on("populate", async () => {
         stock: 100,
         imageUrl:
           "https://bocavicosa.com.br/web/image/product.template/763/image_1024?unique=c0b7635",
+        max: 5,
       },
       {
         name: "Açúcar",
@@ -38,6 +34,7 @@ db.on("populate", async () => {
         stock: 100,
         imageUrl:
           "https://media.licdn.com/dms/image/v2/C4D12AQGHmkIF0Mc45g/article-cover_image-shrink_600_2000/article-cover_image-shrink_600_2000/0/1520077197462?e=2147483647&v=beta&t=VEv2v-gHKerSC7ixLRn1saJyZF-WEBXVSFq8UsI3LhA",
+        max: 5,
       },
       {
         name: "Feijão",
@@ -45,6 +42,7 @@ db.on("populate", async () => {
         stock: 100,
         imageUrl:
           "https://alegrafoods.com.br/wp-content/uploads/2021/07/pasted-image-0.png",
+        max: 5,
       },
       {
         name: "Óleo",
@@ -101,6 +99,7 @@ db.on("populate", async () => {
         stock: 100,
         imageUrl:
           "https://agroadvance.com.br/wp-content/uploads/2023/07/cafe-arabica.png",
+        max: 2,
       },
       {
         name: "Bolacha",
