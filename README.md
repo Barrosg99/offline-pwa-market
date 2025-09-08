@@ -8,6 +8,10 @@ Imagine um supermercado que funciona **mesmo quando a internet decide ser temper
 
 É como ter um supermercado no seu bolso, mas sem precisar carregar sacolas pesadas. 😄
 
+### 🌐 **Acesse Online**
+
+**[https://offline-pwa-market.vercel.app](https://offline-pwa-market.vercel.app)** - Teste agora mesmo no seu navegador! 🚀
+
 ## ✨ Funcionalidades Épicas
 
 ### 🛍️ **Modo Compras** (O Favorito dos Clientes)
@@ -50,11 +54,18 @@ npm run dev
 
 ### 2. **Primeiro Uso** (A parte divertida)
 
-1. Abra [http://localhost:3000](http://localhost:3000) no seu navegador
+**Opção 1 - Online (Mais Fácil):**
+
+1. Acesse [https://offline-pwa-market.vercel.app](https://offline-pwa-market.vercel.app) no seu navegador
 2. Clique em "Gerenciar" para adicionar produtos
 3. Adicione alguns produtos (comece com arroz e feijão, é clássico)
 4. Mude para "Comprar" e faça suas compras virtuais
 5. Divirta-se vendo o total subir! 💸
+
+**Opção 2 - Local (Para Desenvolvedores):**
+
+1. Abra [http://localhost:3000](http://localhost:3000) no seu navegador
+2. Siga os mesmos passos da Opção 1
 
 ## 🛠️ Tecnologias Usadas (A Lista da Fama)
 
