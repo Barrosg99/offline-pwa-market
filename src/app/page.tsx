@@ -205,7 +205,7 @@ export default function ProductManager() {
               </p>
             </div>
 
-            <div className="mt-4 sm:mt-0 flex space-x-3">
+            <div className="mt-4 sm:mt-0 flex flex-wrap space-x-3 space-y-3">
               {/* Toggle de modo */}
 
               <button
