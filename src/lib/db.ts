@@ -26,7 +26,6 @@ db.on("populate", async () => {
         stock: 100,
         imageUrl:
           "https://bocavicosa.com.br/web/image/product.template/763/image_1024?unique=c0b7635",
-        max: 5,
       },
       {
         name: "Açúcar",
@@ -34,7 +33,6 @@ db.on("populate", async () => {
         stock: 100,
         imageUrl:
           "https://media.licdn.com/dms/image/v2/C4D12AQGHmkIF0Mc45g/article-cover_image-shrink_600_2000/article-cover_image-shrink_600_2000/0/1520077197462?e=2147483647&v=beta&t=VEv2v-gHKerSC7ixLRn1saJyZF-WEBXVSFq8UsI3LhA",
-        max: 5,
       },
       {
         name: "Feijão",
@@ -42,7 +40,6 @@ db.on("populate", async () => {
         stock: 100,
         imageUrl:
           "https://alegrafoods.com.br/wp-content/uploads/2021/07/pasted-image-0.png",
-        max: 5,
       },
       {
         name: "Óleo",
@@ -99,7 +96,6 @@ db.on("populate", async () => {
         stock: 100,
         imageUrl:
           "https://agroadvance.com.br/wp-content/uploads/2023/07/cafe-arabica.png",
-        max: 2,
       },
       {
         name: "Bolacha",

@@ -37,6 +37,11 @@ export default function ProductManager() {
   const [isManagementMode, setIsManagementMode] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
 
+  // Estados do orçamento
+  const [budget, setBudget] = useState<number | null>(null);
+  const [showBudgetModal, setShowBudgetModal] = useState(false);
+  const [budgetInput, setBudgetInput] = useState("");
+
   const products = useLiveQuery(() => db.products.orderBy("name").toArray());
 
   const resetForm = () => {
@@ -114,12 +119,36 @@ export default function ProductManager() {
 
   // Funções do carrinho
   const addToCart = (product: Product) => {
+    // Verifica se há orçamento definido e se o produto cabe no orçamento
+    if (budget !== null && !canAddToCart(product)) {
+      const remainingBudget = getRemainingBudget();
+      alert(
+        `Produto não pode ser adicionado. Orçamento restante: R$ ${remainingBudget?.toFixed(
+          2
+        )}`
+      );
+      return;
+    }
+
     const existingItem = cart.find((item) => item.productId === product.id);
     const maxQuantity = product.max || Infinity;
 
     if (existingItem) {
       // Verifica se não excede o limite máximo
       if (existingItem.quantity < maxQuantity) {
+        // Verifica se adicionar mais uma unidade não excede o orçamento
+        if (budget !== null) {
+          const newTotal = getCartTotal() + product.price;
+          if (newTotal > budget) {
+            alert(
+              `Adicionar mais uma unidade excederia o orçamento de R$ ${budget.toFixed(
+                2
+              )}`
+            );
+            return;
+          }
+        }
+
         setCart(
           cart.map((item) =>
             item.productId === product.id
@@ -177,6 +206,38 @@ export default function ProductManager() {
     }
   };
 
+  // Funções do orçamento
+  const startBudget = () => {
+    setShowBudgetModal(true);
+    setBudgetInput("");
+  };
+
+  const setBudgetValue = () => {
+    const budgetValue = parseFloat(budgetInput);
+    if (budgetValue > 0) {
+      setBudget(budgetValue);
+      setShowBudgetModal(false);
+      setBudgetInput("");
+    }
+  };
+
+  const resetBudget = () => {
+    setBudget(null);
+    setCart([]);
+  };
+
+  const getRemainingBudget = () => {
+    if (budget === null) return null;
+    return budget - getCartTotal();
+  };
+
+  const canAddToCart = (product: Product) => {
+    if (budget === null) return true;
+    const remainingBudget = getRemainingBudget();
+    if (remainingBudget === null) return true;
+    return product.price <= remainingBudget;
+  };
+
   if (!products) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -205,12 +266,12 @@ export default function ProductManager() {
               </p>
             </div>
 
-            <div className="mt-4 sm:mt-0 flex flex-wrap space-x-3 space-y-3">
+            <div className="mt-4 sm:mt-0 flex justify-evenly flex-wrap space-x-3 space-y-3">
               {/* Toggle de modo */}
 
               <button
                 onClick={() => setIsManagementMode(!isManagementMode)}
-                className={`inline-flex items-center px-4 py-2 border rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${
+                className={`inline-flex h-[40px] items-center px-4 py-2 border rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${
                   !isManagementMode
                     ? "border-green-300 text-green-700 bg-green-50 hover:bg-green-100 focus:ring-green-500"
                     : "border-gray-300 text-gray-700 bg-white hover:bg-gray-50 focus:ring-gray-500"
@@ -222,7 +283,7 @@ export default function ProductManager() {
 
               <button
                 onClick={() => setIsManagementMode(!isManagementMode)}
-                className={`inline-flex items-center px-4 py-2 border rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${
+                className={`inline-flex h-[40px] items-center px-4 py-2 border rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${
                   isManagementMode
                     ? "border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 focus:ring-blue-500"
                     : "border-gray-300 text-gray-700 bg-white hover:bg-gray-50 focus:ring-gray-500"
@@ -242,26 +303,56 @@ export default function ProductManager() {
                   Adicionar Produto
                 </button>
               )}
+
+              {!isManagementMode && (
+                <button
+                  onClick={budget === null ? startBudget : resetBudget}
+                  className={`inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${
+                    budget === null
+                      ? "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500"
+                      : "bg-red-600 hover:bg-red-700 focus:ring-red-500"
+                  }`}
+                >
+                  <PlusIcon className="h-5 w-5 mr-2" />
+                  {budget === null ? "Iniciar Compra" : "Resetar Orçamento"}
+                </button>
+              )}
             </div>
           </div>
         </div>
       </div>
 
       {/* Resumo do carrinho sticky (apenas no modo compras) */}
-      {!isManagementMode && cart.length > 0 && (
+      {!isManagementMode && (cart.length > 0 || budget !== null) && (
         <div className="sticky top-20 left-0 right-0 bg-green-50 border-b border-green-200 shadow-md z-40">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col align-center items-center justify-between">
               <div className="flex items-center">
                 <ShoppingCartIcon className="h-6 w-6 text-green-600 mr-2" />
                 <span className="text-green-800 font-medium">
                   Carrinho: {getCartItemCount()} item(s)
                 </span>
+                {budget !== null && (
+                  <span className="ml-4 text-blue-800 font-medium">
+                    Orçamento: R$ {budget.toFixed(2)}
+                  </span>
+                )}
               </div>
               <div className="flex items-center space-x-4">
                 <div className="text-2xl font-bold text-green-600">
                   Total: R$ {getCartTotal().toFixed(2)}
                 </div>
+                {budget !== null && (
+                  <div
+                    className={`text-lg font-medium ${
+                      getRemainingBudget()! >= 0
+                        ? "text-blue-600"
+                        : "text-red-600"
+                    }`}
+                  >
+                    Restante: R$ {getRemainingBudget()!.toFixed(2)}
+                  </div>
+                )}
                 <button
                   onClick={clearCart}
                   className="inline-flex items-center px-3 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
@@ -276,7 +367,7 @@ export default function ProductManager() {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 py-8">
         {/* Formulário (apenas no modo gerenciamento) */}
         {isManagementMode && showForm && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -411,9 +502,71 @@ export default function ProductManager() {
           </div>
         )}
 
+        {/* Modal de Orçamento */}
+        {showBudgetModal && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Definir Orçamento
+                </h3>
+                <button
+                  onClick={() => setShowBudgetModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label
+                    htmlFor="budget"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Valor do Orçamento (R$) *
+                  </label>
+                  <input
+                    type="number"
+                    id="budget"
+                    step="0.01"
+                    min="0.01"
+                    value={budgetInput}
+                    onChange={(e) => setBudgetInput(e.target.value)}
+                    className="mt-1 text-black p-2 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    placeholder="0.00"
+                    required
+                    autoFocus
+                  />
+                  <p className="mt-1 text-sm text-gray-500">
+                    Digite o valor máximo que você pretende gastar
+                  </p>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowBudgetModal(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={setBudgetValue}
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Definir Orçamento
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Lista de Produtos */}
         <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4 ml-3">
             {isManagementMode
               ? `Produtos (${products.length})`
               : `Produtos Disponíveis (${products.length})`}
@@ -441,7 +594,7 @@ export default function ProductManager() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="flex flex-wrap gap-3 justify-center">
               {products.map((product) => {
                 const cartItem = cart.find(
                   (item) => item.productId === product.id
@@ -453,7 +606,7 @@ export default function ProductManager() {
                 return (
                   <div
                     key={product.id}
-                    className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                    className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow w-1/4 min-w-[160px]"
                   >
                     <div className="aspect-w-16 aspect-h-9 bg-gray-200">
                       {product.imageUrl ? (
@@ -504,7 +657,7 @@ export default function ProductManager() {
 
                       {/* Botões baseados no modo */}
                       {isManagementMode ? (
-                        <div className="mt-4 flex space-x-2">
+                        <div className="mt-4 flex flex-wrap space-x-2 gap-2">
                           <button
                             onClick={() => startEdit(product)}
                             className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -523,37 +676,44 @@ export default function ProductManager() {
                       ) : (
                         <div className="mt-4">
                           {quantityInCart > 0 ? (
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-col items-center justify-center">
                               <div className="flex items-center space-x-2">
                                 <button
                                   onClick={() => removeFromCart(product.id)}
                                   className="p-1 rounded-full bg-red-100 text-red-600 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500"
                                 >
-                                  <MinusIcon className="h-4 w-4" />
+                                  <MinusIcon className="h-8 w-8" />
                                 </button>
-                                <span className="text-sm font-medium text-gray-900 min-w-[20px] text-center">
+                                <span className="text-lg font-medium text-gray-900 min-w-[20px] text-center">
                                   {quantityInCart}
                                   {product.max && (
-                                    <span className="text-xs text-gray-400 block">
+                                    <span className="text-lg text-gray-400 block">
                                       /{product.max}
                                     </span>
                                   )}
                                 </span>
                                 <button
                                   onClick={() => addToCart(product)}
-                                  disabled={isAtMaxLimit}
+                                  disabled={
+                                    isAtMaxLimit ||
+                                    (budget !== null && !canAddToCart(product))
+                                  }
                                   className={`p-1 rounded-full focus:outline-none focus:ring-2 ${
-                                    isAtMaxLimit
+                                    isAtMaxLimit ||
+                                    (budget !== null && !canAddToCart(product))
                                       ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                                       : "bg-green-100 text-green-600 hover:bg-green-200 focus:ring-green-500"
                                   }`}
                                   title={
                                     isAtMaxLimit
                                       ? `Limite máximo de ${maxQuantity} unidades atingido`
+                                      : budget !== null &&
+                                        !canAddToCart(product)
+                                      ? `Produto excede o orçamento restante`
                                       : "Adicionar ao carrinho"
                                   }
                                 >
-                                  <PlusIcon className="h-4 w-4" />
+                                  <PlusIcon className="h-8 w-8" />
                                 </button>
                               </div>
                               <span className="text-sm font-medium text-gray-500">
@@ -563,10 +723,22 @@ export default function ProductManager() {
                           ) : (
                             <button
                               onClick={() => addToCart(product)}
-                              className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                              disabled={
+                                budget !== null && !canAddToCart(product)
+                              }
+                              className={`w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                budget !== null && !canAddToCart(product)
+                                  ? "text-gray-400 bg-gray-300 cursor-not-allowed"
+                                  : "text-white bg-green-600 hover:bg-green-700 focus:ring-green-500"
+                              }`}
+                              title={
+                                budget !== null && !canAddToCart(product)
+                                  ? `Produto excede o orçamento restante`
+                                  : "Adicionar ao carrinho"
+                              }
                             >
                               <ShoppingCartIcon className="h-4 w-4 mr-2" />
-                              Adicionar ao Carrinho
+                              Adicionar
                             </button>
                           )}
                         </div>
